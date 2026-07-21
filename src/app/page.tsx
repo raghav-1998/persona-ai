@@ -1,5 +1,7 @@
 import Header from "@/components/Header"
 import { Card } from "@/components/ui/card"
+import MessageBubble from "@/components/chat/MessageBubble"
+
 
 export default function Home() {
   return (
@@ -7,7 +9,7 @@ export default function Home() {
       <Header />
 
       <main className="flex-1">
-        <div className="mx-auto max-w-5xl px-4 py-8">
+        {/* <div className="mx-auto max-w-5xl px-4 py-8">
           <Card className="p-8 text-center">
             <h2 className="text-3xl font-bold">Welcome to ChaiCode Mentor AI</h2>
             <p className="mt-4 text-muted-foreground">
@@ -37,7 +39,46 @@ export default function Home() {
               </Card>
             </div>
           </Card>
-        </div>
+        </div> */}
+
+          {/* <MessageBubble
+          message={{
+            id: "1",
+            role: "assistant",
+            content:
+              "## Welcome ☕\n\nLet's learn React step by step.\n\n```tsx\nconst name = 'Chai';\n```",
+            createdAt: new Date(),
+          }}
+        /> */}
+
+        <MessageBubble
+          message={{
+            id: "1",
+            role: "assistant",
+            content: `## JavaScript Example
+
+          Here is a simple JavaScript example:
+
+          \`\`\`javascript
+          const name = "Hitesh";
+
+          console.log(name);
+          \`\`\`
+
+          You can also use inline code like \`console.log()\`.
+          `,
+          createdAt: new Date(),
+          }}
+        />
+
+        <MessageBubble
+          message={{
+            id: "2",
+            role: "user",
+            content: "Explain React Hooks.",
+            createdAt: new Date(),
+          }}
+        />
       </main>
 
       <footer className="border-t py-4">
