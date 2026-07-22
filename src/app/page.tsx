@@ -1,14 +1,20 @@
+"use client"
 import Header from "@/components/Header"
 import { Card } from "@/components/ui/card"
 import MessageBubble from "@/components/chat/MessageBubble"
+import ChatInput from "@/components/chat/ChatInput"
 
 
 export default function Home() {
+    const handleSend = (message: string) => {
+      console.log("Message:", message);
+    };
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
 
-      <main className="flex-1">
+      <main className="mx-auto flex min-h-screen max-w-3xl items-end p-6">
         {/* <div className="mx-auto max-w-5xl px-4 py-8">
           <Card className="p-8 text-center">
             <h2 className="text-3xl font-bold">Welcome to ChaiCode Mentor AI</h2>
@@ -51,7 +57,7 @@ export default function Home() {
           }}
         /> */}
 
-        <MessageBubble
+        {/* <MessageBubble
           message={{
             id: "1",
             role: "assistant",
@@ -78,7 +84,9 @@ export default function Home() {
             content: "Explain React Hooks.",
             createdAt: new Date(),
           }}
-        />
+        /> */}
+        <ChatInput onSend={handleSend} />
+
       </main>
 
       <footer className="border-t py-4">
