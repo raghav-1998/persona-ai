@@ -3,6 +3,7 @@ import Header from "@/components/Header"
 import { Card } from "@/components/ui/card"
 import MessageBubble from "@/components/chat/MessageBubble"
 import ChatInput from "@/components/chat/ChatInput"
+import ChatWindow from "@/components/chat/ChatWindow"
 
 
 export default function Home() {
@@ -85,8 +86,9 @@ export default function Home() {
             createdAt: new Date(),
           }}
         /> */}
-        <ChatInput onSend={handleSend} />
+          {/* <ChatInput onSend={handleSend} /> */}
 
+          <ChatWindow/>
       </main>
 
       <footer className="border-t py-4">
