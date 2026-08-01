@@ -22,7 +22,7 @@ export default function ChatWindow(){
         scrollToBottom();
     }, [messages, isLoading]);
 
-    const handleSendMessage=(content:string)=>{
+    async function handleSendMessage(content:string){
         const newMessage:ChatMessage={
             id:crypto.randomUUID(),
             role:"user",
@@ -30,35 +30,78 @@ export default function ChatWindow(){
             createdAt:new Date()
         };
 
-        setMessages((previousMessages)=>[
-            ...previousMessages,
-            newMessage,
-        ]);
+        // console.log(newMessage);
+        const updatedMessage=[...messages,newMessage]
+        setMessages(updatedMessage);
 
         /*
      * Temporary loading simulation.
      *
      * Actual AI integration will be implemented in Chapter 5.
      */
+        // setIsLoading(true);
+
+        // setTimeout(()=>{
+        //     const assistantMessage:ChatMessage={
+        //         id:crypto.randomUUID(),
+        //         role:"assistant",
+        //         content:
+        //         "I received your message. AI integration will be added in Chapter 5 ☕",
+        //         createdAt:new Date()
+        //     };
+
+        //     setMessages((previousMessages)=>[
+        //         ...previousMessages,
+        //         assistantMessage,
+        //     ]);
+
+        //     setIsLoading(false)
+        // }, 1000)
         setIsLoading(true);
 
-        setTimeout(()=>{
-            const assistantMessage:ChatMessage={
-                id:crypto.randomUUID(),
-                role:"assistant",
-                content:
-                "I received your message. AI integration will be added in Chapter 5 ☕",
-                createdAt:new Date()
-            };
+        try {
+        //console.log(messages);
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+            messages: updatedMessage.map((message) => ({
+                role: message.role,
+                content: message.content,
+            })),
+            }),
+        });
 
-            setMessages((previousMessages)=>[
-                ...previousMessages,
-                assistantMessage,
-            ]);
+        if (!response.ok) {
+            throw new Error("Failed to generate response.");
+        }
 
-            setIsLoading(false)
-        }, 1000)
-    }
+        const data: { message: string } = await response.json();
+
+        const assistantMessage: ChatMessage = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: data.message,
+            createdAt: new Date(),
+        };
+
+        setMessages([...updatedMessage, assistantMessage]);
+        } catch {
+        const errorMessage: ChatMessage = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content:
+            "Sorry, I couldn't generate a response. Please try again.",
+            createdAt: new Date(),
+        };
+
+        setMessages((previous) => [...previous, errorMessage]);
+        } finally {
+        setIsLoading(false);
+        }
+            }
 
     return(
         <section  className="flex min-h-0 flex-1 flex-col">

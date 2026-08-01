@@ -16,10 +16,10 @@ export function getPersona(
     return persona
 }
 
-const persona=getPersona();
-console.log(persona.displayName);
-console.log(persona.description)
+// const persona=getPersona();
+// console.log(persona.displayName);
+// console.log(persona.description)
 
-const persona1=getPersona("ABABABABA");
-console.log(persona1.displayName);
-console.log(persona1.description)
+// const persona1=getPersona("ABABABABA");
+// console.log(persona1.displayName);
+// console.log(persona1.description)
