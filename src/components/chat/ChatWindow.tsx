@@ -81,23 +81,53 @@ export default function ChatWindow(){
             }),
         });
 
-        const data:|ChatSuccessResponse|ChatErrorResponse=await response.json();
+        // const data:|ChatSuccessResponse|ChatErrorResponse=await response.json();
+
+        if (!response.body) {
+            throw new Error("Streaming is not supported.");
+        }
 
         if (!response.ok) {
-            throw new Error((data as ChatErrorResponse).error);
+            // throw new Error((data as ChatErrorResponse).error);
+            throw new Error("Failed to generate response.")
         }
 
         // const data: { message: string } = await response.json();
 
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
         const assistantMessage: ChatMessage = {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: (data as ChatSuccessResponse).message,
+            // content: (data as ChatSuccessResponse).message,
+            content:"",
             createdAt: new Date(),
         };
 
         // setMessages([...updatedMessage, assistantMessage]);
         setMessages((previousMessages)=>[...previousMessages, assistantMessage]);
+
+        let streamedContent = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) break;
+
+            streamedContent += decoder.decode(value);
+
+            setMessages(previous =>
+                previous.map(message =>
+                    message.id === assistantMessage.id
+                        ? {
+                            ...message,
+                            content: streamedContent,
+                        }
+                        : message
+                )
+            );
+        }
         } catch(error) {
         const errorMessage: ChatMessage = {
             id: crypto.randomUUID(),
