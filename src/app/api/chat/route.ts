@@ -4,6 +4,7 @@ import { getPersona } from "@/lib/persona/persona-service";
 import { NextRequest, NextResponse } from "next/server";
 import { ChatErrorResponse, ChatSuccessResponse } from "@/lib/ai/api-types";
 import { MAX_MESSAGE_LENGTH, MAX_HISTORY_MESSAGES } from "@/lib/constants";
+import { generateStreamingResponse } from "@/lib/ai/streaming";
 
 interface ChatRequest{
     messages:AIMessage[];
@@ -11,6 +12,7 @@ interface ChatRequest{
 
 export async function POST(req:NextRequest){
     try {
+        // console.log(await req.json())
         const body:ChatRequest=await req.json();
 
         // ==========================================================
@@ -119,20 +121,50 @@ export async function POST(req:NextRequest){
         // Existing OpenAI Call
         // ==========================================================
 
-        const assistanResponse=await generateChatResponse(messages);
+        // const assistanResponse=await generateChatResponse(messages);
 
-        // ==========================================================
-        // NEW:
-        // Strongly typed success response
-        // ==========================================================
+        // // ==========================================================
+        // // NEW:
+        // // Strongly typed success response
+        // // ==========================================================
 
-        const response:ChatSuccessResponse={
-            message:assistanResponse
-        }
-        return NextResponse.json(response);
+        // const response:ChatSuccessResponse={
+        //     message:assistanResponse
+        // }
+        // return NextResponse.json(response);
+
+        const stream=await generateStreamingResponse(messages);
+
+        const encoder=new TextEncoder()
+
+        const readableStream=new ReadableStream({
+            async start(controller){
+                try {
+                    for await (const chunk of stream){
+                        const token=chunk.choices[0]?.delta?.content??""
+                        
+                        if(token){
+                            controller.enqueue(encoder.encode(token))
+                        }
+                    }
+                    controller.close()
+                } catch (error) {
+                    controller.error(error)
+                }
+            }
+        })
+
+        return new Response(readableStream,{
+            headers:{
+                "Content-Type": "text/plain; charset=utf-8",
+                "Cache-Control": "no-cache",
+                Connection: "keep-alive",
+            }
+        })
 
     } catch (error) {
-        console.error("Chat API error:", error);
+        // console.error("Chat API error:", error);
+        console.error("Streaming API error:", error);
 
         const response: ChatErrorResponse = {
             error:"Unable to generate a response right now. Please try again.",
