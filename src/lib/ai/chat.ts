@@ -1,10 +1,10 @@
-import { openAI } from "./client";
+import { openai } from "./client";
 import { AIMessage } from "./types";
 
 export async function generateChatResponse(
     messages:AIMessage[],
 ){
-    const response=await openAI.chat.completions.create({
+    const response=await openai.chat.completions.create({
         model:"gpt-4.1-mini",
         messages
     });

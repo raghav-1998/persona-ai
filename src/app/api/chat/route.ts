@@ -1,8 +1,9 @@
 import { generateChatResponse } from "@/lib/ai/chat";
 import { AIMessage } from "@/lib/ai/types";
 import { getPersona } from "@/lib/persona/persona-service";
-import { error } from "console";
 import { NextRequest, NextResponse } from "next/server";
+import { ChatErrorResponse, ChatSuccessResponse } from "@/lib/ai/api-types";
+import { MAX_MESSAGE_LENGTH, MAX_HISTORY_MESSAGES } from "@/lib/constants";
 
 interface ChatRequest{
     messages:AIMessage[];
@@ -12,35 +13,132 @@ export async function POST(req:NextRequest){
     try {
         const body:ChatRequest=await req.json();
 
+        // ==========================================================
+        // NEW: Validate messages property
+        // ==========================================================
+
+        if (!Array.isArray(body.messages)) {
+            const response: ChatErrorResponse = {
+                error: "Invalid request format.",
+        };
+
+            return NextResponse.json(response, {
+                status: 400,
+            });
+        }
         if(!body.messages || body.messages.length===0){
-            return NextResponse.json({
+            const response: ChatErrorResponse={
                 error:"At least one message is required."
-            },{
+            }
+            return NextResponse.json(
+                response,{
                 status:400
             })
         }
 
+         // ==========================================================
+        //  NEW: Validate every message
+        //  ==========================================================
+
+        for (const message of body.messages) {
+            if (
+                message.role !== "user" &&
+                message.role !== "assistant"
+            ) {
+                return NextResponse.json(
+                {
+                    error: "Invalid message role.",
+                },
+                {
+                    status: 400,
+                }
+                );
+            }
+
+            if (!message.content.trim()) {
+                return NextResponse.json(
+                {
+                    error: "Message cannot be empty.",
+                },
+                {
+                    status: 400,
+                }
+                );
+            }
+
+            if (
+                message.content.length >
+                MAX_MESSAGE_LENGTH
+            ) {
+                return NextResponse.json(
+                {
+                    error: `Message exceeds ${MAX_MESSAGE_LENGTH} characters.`,
+                },
+                {
+                    status: 400,
+                }
+                );
+            }
+        }
+
+        // ==========================================================
+        // NEW:
+        // Keep only the latest conversation history.
+        //
+        // WHY?
+        // LLMs have context limits and token costs.
+        // Later we'll replace this with
+        // Conversation Memory + RAG.
+        // ==========================================================
+
+        const recentMessages = body.messages.slice(
+            -MAX_HISTORY_MESSAGES
+        );
+
+        // ==========================================================
+        // Existing Persona Engine
+        // ==========================================================
+
         const persona=getPersona();
+
+        // ==========================================================
+        // CHANGED:
+        // Build final prompt
+        // ==========================================================
 
         const messages:AIMessage[]=[
             {
                 role:"system",
                 content:persona.systemPrompt
             },
-            ...body.messages
+            // ...body.messages
+            ...recentMessages
         ];
 
-        const response=await generateChatResponse(messages);
+         // ==========================================================
+        // Existing OpenAI Call
+        // ==========================================================
 
-        return NextResponse.json({
-            message:response
-        })
+        const assistanResponse=await generateChatResponse(messages);
+
+        // ==========================================================
+        // NEW:
+        // Strongly typed success response
+        // ==========================================================
+
+        const response:ChatSuccessResponse={
+            message:assistanResponse
+        }
+        return NextResponse.json(response);
+
     } catch (error) {
         console.error("Chat API error:", error);
 
-        return NextResponse.json({
-            error:"Failed to generate response.",
-        },{
+        const response: ChatErrorResponse = {
+            error:"Unable to generate a response right now. Please try again.",
+        };
+
+        return NextResponse.json(response,{
             status:500,
         })
     }

@@ -4,6 +4,8 @@ import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import EmptyState from "./EmptyState";
 import TypingIndicator from "./TypingIndicator";
+import { MAX_HISTORY_MESSAGES } from "@/lib/constants";
+import { ChatErrorResponse, ChatSuccessResponse } from "@/lib/ai/api-types";
 
 export default function ChatWindow(){
     const[messages, setMessages]=useState<ChatMessage[]>([]);
@@ -23,6 +25,9 @@ export default function ChatWindow(){
     }, [messages, isLoading]);
 
     async function handleSendMessage(content:string){
+        if(isLoading){
+            return;
+        }
         const newMessage:ChatMessage={
             id:crypto.randomUUID(),
             role:"user",
@@ -33,6 +38,8 @@ export default function ChatWindow(){
         // console.log(newMessage);
         const updatedMessage=[...messages,newMessage]
         setMessages(updatedMessage);
+
+        const recentConversation=updatedMessage.slice(-MAX_HISTORY_MESSAGES);
 
         /*
      * Temporary loading simulation.
@@ -67,33 +74,38 @@ export default function ChatWindow(){
             "Content-Type": "application/json",
             },
             body: JSON.stringify({
-            messages: updatedMessage.map((message) => ({
+            messages: recentConversation.map((message) => ({
                 role: message.role,
                 content: message.content,
             })),
             }),
         });
 
+        const data:|ChatSuccessResponse|ChatErrorResponse=await response.json();
+
         if (!response.ok) {
-            throw new Error("Failed to generate response.");
+            throw new Error((data as ChatErrorResponse).error);
         }
 
-        const data: { message: string } = await response.json();
+        // const data: { message: string } = await response.json();
 
         const assistantMessage: ChatMessage = {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: data.message,
+            content: (data as ChatSuccessResponse).message,
             createdAt: new Date(),
         };
 
-        setMessages([...updatedMessage, assistantMessage]);
-        } catch {
+        // setMessages([...updatedMessage, assistantMessage]);
+        setMessages((previousMessages)=>[...previousMessages, assistantMessage]);
+        } catch(error) {
         const errorMessage: ChatMessage = {
             id: crypto.randomUUID(),
             role: "assistant",
             content:
-            "Sorry, I couldn't generate a response. Please try again.",
+                error instanceof Error
+                    ? error.message
+                    : "Sorry, I couldn't generate a response. Please try again.",
             createdAt: new Date(),
         };
 
